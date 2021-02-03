@@ -4,6 +4,49 @@ from math import log2, inf
 from time import time
 
 
+class Item:
+    def __init__(self, iterable, child=None):
+        self.value = 0
+        self.child = child
+        self.currentIteration = None
+        self.iterable = iterable
+
+    def iterate(self, iteration):
+        if n > iteration > 0:
+            # BSL, not first
+            for i_ in self.iterable:
+                self.currentIteration = i_
+                curLength = sum([len(p.currentIteration) for p in possible[:iteration + 1]])
+                if curLength < possible[-1].child:
+                    self.child.iterate(iteration + 1)
+        elif iteration > n:
+            # Key not first
+            for i_ in self.iterable:
+                self.currentIteration = i_
+                # XOR checks
+                yes = True
+                for a in XOR_Combos[iteration - n - 1]:
+                    firstPair = [b.currentIteration for b in
+                                 [possible[positionMix[a][0] + n], possible[positionMix[a][0]]]]
+                    secondPair = [b.currentIteration for b in
+                                  [possible[positionMix[a][1] + n], possible[positionMix[a][1]]]]
+                    yes *= XORsum(*firstPair) ^ XORsum(*secondPair) == cs[a]
+                if yes:
+                    if isinstance(self.child, Item):
+                        self.child.iterate(iteration + 1)
+                    else:
+                        self.child = sum([len(p.currentIteration) for p in possible[:n]])
+                        [p.save() for p in possible]
+        elif iteration == 0 or iteration == n:
+            # First of it's type either key or BSL
+            for i_ in self.iterable:
+                self.currentIteration = i_
+                self.child.iterate(iteration + 1)
+
+    def save(self):
+        self.value = self.currentIteration
+
+
 def XORsum(k, s):
     out = 0
     for i in s:
@@ -12,7 +55,7 @@ def XORsum(k, s):
 
 
 def bitRep(e: int) -> str:
-    return ''.join('{0:016b}'.format(e, 'b'))
+    return ''.join('{0:08b}'.format(e, 'b'))
 
 
 def decode(encoded, k, s):
@@ -23,103 +66,91 @@ def sort(e):
     return len(e[0][1]) + len(e[1][1]) + len(e[2][1])
 
 
-if __name__ == "__main__":
-    L = []
-    lengths = [8, 16]
+L = []
+lengths = [4]
 
-    for k in lengths:
-        L.append([])
+for k in lengths:
+    L.append([])
+    s0 = []
+    n = 2
+    for i in range(1, k + 2):
+        s0.extend([list(n) for n in list(combinations(range(k + 1), i))])
+    for _ in range(10):
+        t0 = time()
+        fs = [randint(0, 2 ** (2 * k) - 1)]
+        for _ in range(n - 1):
+            temp = randint(0, 2 ** (2 * k) - 1)
+            while temp in fs:
+                temp = randint(0, 2 ** (2 * k) - 1)
+            fs.append(temp)
+        cs = [fs[i[0]] ^ fs[i[1]] for i in list(combinations(range(n), 2))]
+
         s0 = []
         for i in range(1, k + 2):
             s0.extend([list(n) for n in list(combinations(range(k + 1), i))])
-        for _ in range(1000):
-            # t0 = time()
-            f1 = randint(0, 2 ** (2 * k) - 1)
-            f2 = randint(0, 2 ** (2 * k) - 1)
-            while f2 == f1:
-                f2 = randint(0, 2 ** (2 * k) - 1)
-            f3 = randint(0, 2 ** (2 * k) - 1)
-            while f3 == f2 or f3 == f1:
-                f3 = randint(0, 2 ** (2 * k) - 1)
-            # f4 = randint(0, 2 ** (2 * k) - 1)
-            # while f4 == f3 or f4 == f2 or f4 == f1:
-            #     f4 = randint(0, 2 ** (2 * k) - 1)
-            c12 = f1 ^ f2
-            c13 = f1 ^ f3
-            # c14 = f1 ^ f4
-            c23 = f2 ^ f3
-            # c24 = f2 ^ f4
-            # c34 = f3 ^ f4
 
-            possible = inf
+        possible = []
+        for i in range(n):
+            possible.append(Item(s0))
+        for i in range(n):
+            possible.append(Item(range(2 ** k)))
 
-            s0 = []
-            for i in range(1, k + 2):
-                s0.extend([list(n) for n in list(combinations(range(k + 1), i))])
-            for p in s0:
-                for q in s0:
-                    if len(p) + len(q) < possible:
-                        for r in s0:
-                            if len(p) + len(q) + len(r) < possible:
-                                # for s in s0:
-                                #     if len(p) + len(q) + len(r) + len(s) < possible:
-                                        for i in range(2 ** k):
-                                            for n in range(2 ** k):
-                                                if XORsum(i, p) ^ XORsum(n, q) == c12:
-                                                    for m in range(2 ** k):
-                                                        if XORsum(i, p) ^ XORsum(m, r) == c13 and XORsum(n, q) ^ XORsum(m, r) == c23:
-                                                            possible = (len(p) + len(q) + len(r))
-                                                            # for x in range(2 ** k):
-                                                                # if (XORsum(x, s) ^ XORsum(i, p)) == c14 and (XORsum(x, s) ^ XORsum(n, q)) == c24 and (XORsum(x, s) ^ XORsum(m, r)) == c34:
-                                                                    # possible.append([[i, p], [n, q], [m, r]])
-                                                                    # possible = (len(p) + len(q) + len(r) + len(s))
+        for i in range(2 * n - 1):
+            possible[i].child = possible[i + 1]
+        possible[-1].child = inf
 
-            # print(f'{len(possible)} possible key pairings found')
-            # possible.sort()
-            L[-1].append(possible)
-            # print(time() - t0)
+        XOR_Combos = []
+        for i in range(2, n + 1):
+            XOR_Combos.append(list(combinations(range(i), 2)))
 
-        print(L[-1])
+        included = []
+        for i in range(len(XOR_Combos)):
+            XOR_Combos[i] = [t for t in XOR_Combos[i] if t not in included]
+            included.extend(XOR_Combos[i])
 
-    with open('test.txt', 'w') as f:
-        f.write("    " + "S".ljust(19) + "Delta B_s".ljust(23) + "Delta B".ljust(23) + "R_s".ljust(23) + "R".ljust(23) + "\n")
-        f.write('EM1' + "\n")
-        n = 3
-        for i in range(len(L)):
-            l = lengths[i]
-            delta = (n * l) / (l - 1)
-            S = [n < delta for n in L[i]]
-            allSuccess = [d for d, s in zip(L[i], S) if s]
-            p = [f'{2 * l} - {sum(S)}/{len(S)}={sum(S) / len(S)}' if len(S) != 0 else 'N/A',
-                 f'{sum([i - n * l for i in allSuccess]) / len(allSuccess)}' if len(allSuccess) != 0 else 'N/A',
-                 f'{sum([i - n * l for i in L[i]]) / len(L[i])}',
-                 f'{round(sum([(i * log2(l) + n * l) / (2 * n * l) for i in allSuccess]) / len(allSuccess), 5)}' if len(
-                     allSuccess) != 0 else 'N/A',
-                 f'{round(sum([(i * log2(l) + n * l) / (2 * n * l) for i in L[i]]) / len(L[i]), 5)}']
-            f.write(" | ".join([i.ljust(20) for i in p]) + "\n")
-        f.write('EM2' + "\n")
-        for i in range(len(L)):
-            l = lengths[i]
-            delta = (2 * n * l) / (l - 1)
-            S = [n < delta for n in L[i]]
-            allSuccess = [d for d, s in zip(L[i], S) if s]
-            p = [f'{2 * l} - {sum(S)}/{len(S)}={sum(S) / len(S)}' if len(S) != 0 else 'N/A',
-                 f'{sum([i - n * l for i in allSuccess]) / len(allSuccess)}' if len(allSuccess) != 0 else 'N/A',
-                 f'{sum([i - n * l for i in L[i]]) / len(L[i])}',
-                 f'{round(sum([(i * log2(l)) / (2 * n * l) for i in allSuccess]) / len(allSuccess), 5)}' if len(
-                     allSuccess) != 0 else 'N/A',
-                 f'{round(sum([(i * log2(l)) / (2 * n * l) for i in L[i]]) / len(L[i]), 5)}']
-            f.write(" | ".join([i.ljust(20) for i in p]) + "\n")
+        del included
 
-    # just = 35
-    # for i in possible:
-    #     k1 = str(f'{bitRep(i[0][0])} {i[0][1]}').ljust(just)
-    #     k2 = str(f'{bitRep(i[1][0])} {i[1][1]}').ljust(just)
-    #     k3 = str(f'{bitRep(i[2][0])} {i[2][1]}').ljust(just)
-    #     # k4 = str(f'{bitRep(i[3][0])} {i[3][1]}').ljust(just)
-    #     f0 = f1 ^ XORsum(*i[0])
-    #     f1d = f0 ^ XORsum(*i[0])
-    #     f2d = f0 ^ XORsum(*i[1])
-    #     f3d = f0 ^ XORsum(*i[2])
-    #     # f4d = f0 ^ XORsum(*i[3])
-    #     print(' | '.join([k1, k2, k3]) + ' || ' + f'{bitRep(f0)}' + ' || ' + ' | '.join([bitRep(n) for n in [f1d, f2d, f3d]]))
+        positionMix = list(combinations(range(n), 2))
+        XOR_Combos = [[positionMix.index(t) for t in p] for p in XOR_Combos]
+
+        possible[0].iterate(0)
+
+        print(time() - t0)
+        f0 = fs[0] ^ XORsum(possible[n].value, possible[0].value)
+        [print(f'{bitRep(fs[a])} = {bitRep(f0)} ^ XORsum({bitRep(possible[n + a].value)} {possible[a].value})') for a in range(n)]
+        possible = [a.value for a in possible]
+        print('')
+
+        L[-1].append(possible)
+
+    # print(L[-1])
+
+with open('test.txt', 'w') as f:
+    f.write("    " + "S".ljust(19) + "Delta B_s".ljust(23) + "Delta B".ljust(23) + "R_s".ljust(23) + "R".ljust(23) + "\n")
+    f.write('EM1' + "\n")
+    n = 3
+    for i in range(len(lengths)):
+        l = lengths[i]
+        delta = (n * l) / (l - 1)
+        S = [n < delta for n in L[i]]
+        allSuccess = [d for d, s in zip(L[i], S) if s]
+        p = [f'{2 * l} - {sum(S)}/{len(S)}={sum(S) / len(S)}' if len(S) != 0 else 'N/A',
+             f'{sum([i - n * l for i in allSuccess]) / len(allSuccess)}' if len(allSuccess) != 0 else 'N/A',
+             f'{sum([i - n * l for i in L[i]]) / len(L[i])}',
+             f'{round(sum([(i * log2(l) + n * l) / (2 * n * l) for i in allSuccess]) / len(allSuccess), 5)}' if len(
+                 allSuccess) != 0 else 'N/A',
+             f'{round(sum([(i * log2(l) + n * l) / (2 * n * l) for i in L[i]]) / len(L[i]), 5)}']
+        f.write(" | ".join([i.ljust(20) for i in p]) + "\n")
+    f.write('EM2' + "\n")
+    for i in range(len(L)):
+        l = lengths[i]
+        delta = (2 * n * l) / (l - 1)
+        S = [n < delta for n in L[i]]
+        allSuccess = [d for d, s in zip(L[i], S) if s]
+        p = [f'{2 * l} - {sum(S)}/{len(S)}={sum(S) / len(S)}' if len(S) != 0 else 'N/A',
+             f'{sum([i - n * l for i in allSuccess]) / len(allSuccess)}' if len(allSuccess) != 0 else 'N/A',
+             f'{sum([i - n * l for i in L[i]]) / len(L[i])}',
+             f'{round(sum([(i * log2(l)) / (2 * n * l) for i in allSuccess]) / len(allSuccess), 5)}' if len(
+                 allSuccess) != 0 else 'N/A',
+             f'{round(sum([(i * log2(l)) / (2 * n * l) for i in L[i]]) / len(L[i]), 5)}']
+        f.write(" | ".join([i.ljust(20) for i in p]) + "\n")
