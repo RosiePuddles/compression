@@ -1,59 +1,7 @@
-from random import *
 from itertools import combinations
 from math import log2, inf
+from random import *
 from time import time
-
-
-class Item:
-    def __init__(self, iterable, child=None):
-        self.value = 0
-        self.child = child
-        self.currentIteration = None
-        self.iterable = iterable
-
-    def iterate(self, iteration):
-        if n > iteration > 0:
-            # BSL, not first
-            for i_ in self.iterable:
-                self.currentIteration = i_
-                curLength = sum([len(p.currentIteration) for p in possible[:iteration + 1]])
-                # Length check
-                if curLength < possible[-1].child:
-                    self.child.iterate(iteration + 1)
-                else:
-                    break
-        elif iteration > n:
-            # Key, not first
-            for i_ in self.iterable:
-                self.currentIteration = i_
-                # XOR checks
-                XOR_checks[iteration - n] = XORsum(self.currentIteration, possible[iteration - n].currentIteration)
-                yes = True
-                for a in XOR_Combos[iteration - n - 1]:
-                    yes *= XOR_checks[positionMix[a][0]] ^ XOR_checks[positionMix[a][1]] == cs[a]
-                if yes:
-                    if isinstance(self.child, Item):
-                        self.child.iterate(iteration + 1)
-                    else:
-                        self.child = sum([len(p.currentIteration) for p in possible[:n]])
-                        [p.save() for p in possible]
-        elif iteration == 0:
-            # First BSL
-            for i_ in self.iterable:
-                self.currentIteration = i_
-                # Length check
-                if len(self.currentIteration) < possible[-1].child:
-                    self.child.iterate(iteration + 1)
-                else:
-                    break
-        else:
-            for i_ in self.iterable:
-                self.currentIteration = i_
-                XOR_checks[0] = XORsum(self.currentIteration, possible[0].currentIteration)
-                self.child.iterate(iteration + 1)
-
-    def save(self):
-        self.value = self.currentIteration
 
 
 class Key:
@@ -70,12 +18,12 @@ class Key:
             for i_ in range(2 ** self.length):
                 self.current_iteration = i_
                 F0C = self.file ^ XORsum(self.current_iteration, possible[0].current_iteration)
-                F0C = [F0C, F0C >> k - 1, F0C % 2]
-                self.child.iterate(iteration + 1, F0C=F0C[0], first=F0C[1], last=F0C[2])
+                # F0C = [F0C, F0C >> k - 1, F0C % 2]
+                self.child.iterate(iteration + 1, F0C=F0C)
         else:
             # Not first key, so 'last' and 'first' exist
-            # last = kwargs['last']
-            # first = kwargs['first']
+            # last = int(kwargs['last'])
+            # first = int(kwargs['first'])
             F0C = kwargs['F0C']
             # if last and first:
             #     cur_BSL = possible[iteration - n].current_iteration
@@ -97,7 +45,11 @@ class Key:
             #     for i_ in range(2 ** self.length - 1):
             #         self.current_iteration = i_
             #         self.iteration_checks(iteration, F0C, first, last)
-            for i_ in range(2 ** self.length - 1):
+            # low = first * (1 << (self.length - 1))
+            # print(low)
+            # high = int(low + 2 ** (self.length - first))
+            # print(high)
+            for i_ in range(2 ** self.length):
                 self.current_iteration = i_
                 self.iteration_checks(iteration, F0C)
 
@@ -220,6 +172,8 @@ for i in L:
     timTot += sum([a.time_taken for a in i])
 print(f'Time total (with processing)    - {time() - t_}\n'
       f'Time total (without processing) - {timTot}\n')
+
+print(sum([a.BSL_length for a in L[0]]) / len(L[0]))
 
 print("    " + "S".ljust(19) + "Delta B_s".ljust(23) + "Delta B".ljust(23) + "R_s".ljust(23) + "R".ljust(23))
 print("EM1")
