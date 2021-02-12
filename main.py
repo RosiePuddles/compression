@@ -56,6 +56,84 @@ class Item:
         self.value = self.currentIteration
 
 
+class Key:
+    def __init__(self, length, file, child=None):
+        self.value = 0
+        self.length = length
+        self.file = file
+        self.current_iteration = 0
+        self.child = child
+
+    def iterate(self, iteration, **kwargs):
+        if iteration == n:
+            # First key
+            for i_ in range(2 ** self.length):
+                self.current_iteration = i_
+                F0C = self.file ^ XORsum(self.current_iteration, possible[0].current_iteration)
+                F0C = [F0C, F0C >> k - 1, F0C % 2]
+                self.child.iterate(iteration + 1, F0C=F0C[0], first=F0C[1], last=F0C[2])
+        else:
+            # Not first key, so 'last' and 'first' exist
+            # last = kwargs['last']
+            # first = kwargs['first']
+            F0C = kwargs['F0C']
+            # if last and first:
+            #     cur_BSL = possible[iteration - n].current_iteration
+            #     if cur_BSL[0] == 0 and cur_BSL[-1] == k - 1:
+            #         for i_ in range(2 ** (self.length - 2) - 1):
+            #             self.current_iteration = ((i_ + (1 << (self.length - 2))) << 1) + 1
+            #             self.iteration_checks(iteration, F0C, first, last)
+            # elif first:
+            #     if possible[iteration - n].current_iteration[-1] == k - 1:
+            #         for i_ in range(2 ** (self.length - 1) - 1):
+            #             self.current_iteration = i_ + (1 << (self.length - 1))
+            #             self.iteration_checks(iteration, F0C, first, last)
+            # elif last:
+            #     if possible[iteration - n].current_iteration[0] == 0:
+            #         for i_ in range(2 ** (self.length - 1) - 1):
+            #             self.current_iteration = (i_ << 1) + 1
+            #             self.iteration_checks(iteration, F0C, first, last)
+            # else:
+            #     for i_ in range(2 ** self.length - 1):
+            #         self.current_iteration = i_
+            #         self.iteration_checks(iteration, F0C, first, last)
+            for i_ in range(2 ** self.length - 1):
+                self.current_iteration = i_
+                self.iteration_checks(iteration, F0C)
+
+    def iteration_checks(self, iteration, F0C):
+        if self.file ^ XORsum(self.current_iteration, possible[iteration - n].current_iteration) == F0C:
+            if iteration == 2 * n - 1:
+                self.child = sum([len(p.current_iteration) for p in possible[:n]])
+                [p.save() for p in possible]
+            else:
+                self.child.iterate(iteration + 1, F0C=F0C)
+
+    def save(self):
+        self.value = self.current_iteration
+
+
+class BSL:
+    def __init__(self, S0, child=None):
+        self.value = 0
+        self.iterable = S0
+        self.current_iteration = 0
+        self.child = child
+
+    def iterate(self, iteration, **kwargs):
+        previous_length_sum = kwargs['previous_length_sum']
+        for i_ in self.iterable:
+            previous_length_sum += len(i_)
+            if previous_length_sum < possible[-1].child:
+                self.current_iteration = i_
+                self.child.iterate(iteration + 1, previous_length_sum=previous_length_sum)
+            else:
+                break
+
+    def save(self):
+        self.value = self.current_iteration
+
+
 class Res:
     def __init__(self, time_taken, batch_size, l, BSL_length):
         self.time_taken = time_taken
@@ -107,7 +185,7 @@ for n in lengths:
 
     positionMix = list(combinations(range(n), 2))
     XOR_Combos = [[positionMix.index(t) for t in p] for p in XOR_Combos]
-    for _ in range(iterations):
+    for iteration_number in range(iterations):
         t0 = time()
         maxRand = 2 ** (2 * k) - 1
         fs = [randint(0, maxRand)]
@@ -120,9 +198,9 @@ for n in lengths:
 
         possible = []
         for i in range(n):
-            possible.append(Item(s0))
+            possible.append(BSL(s0))
         for i in range(n):
-            possible.append(Item(range(2 ** (k + 1) - 1)))
+            possible.append(Key(k + 1, fs[i]))
 
         for i in range(2 * n - 1):
             possible[i].child = possible[i + 1]
@@ -130,19 +208,18 @@ for n in lengths:
 
         XOR_checks = [0] * n
 
-        possible[0].iterate(0)
+        possible[0].iterate(0, previous_length_sum=0)
 
         if isinstance(possible[0].value, list):
             result = Res(time() - t0, n, k, sum([len(a.value) for a in possible[:n]]))
-            print(result)
+            # print(f'{str(iteration_number).ljust(5)}- {result}')
             L[-1].append(result)
 
 timTot = 0
 for i in L:
     timTot += sum([a.time_taken for a in i])
 print(f'Time total (with processing)    - {time() - t_}\n'
-      f'Time total (without processing) - {timTot}\n'
-      f'Average time per iteration      - {1000 * timTot / iterations}')
+      f'Time total (without processing) - {timTot}\n')
 
 print("    " + "S".ljust(19) + "Delta B_s".ljust(23) + "Delta B".ljust(23) + "R_s".ljust(23) + "R".ljust(23))
 print("EM1")
@@ -176,47 +253,3 @@ for i in L:
              allSuccess) != 0 else 'N/A',
          f'{round(sum([(a * log2(l) + 2 * l) / (2 * n * l) for a in all]) / len(all), 5)}']
     print(" | ".join([i.ljust(20) for i in p]))
-# print("EM2")
-# for i in range(len(lengths)):
-#     n = lengths[i]
-#     delta = (2 * n * k) / (log2(k) - 1)
-#     all = [sum([len(a) for a in p[:n]]) for p in L[i]]
-#     S = [p < delta for p in all]
-#     allSuccess = [d for d, s in zip(all, S) if s]
-#     p = [f'{n} - {sum(S)}/{len(S)}={sum(S) / len(S)}' if len(S) != 0 else 'N/A',
-#          f'{sum([a - n * k for a in allSuccess]) / len(allSuccess)}' if len(allSuccess) != 0 else 'N/A',
-#          f'{sum([a - n * k for a in all]) / len(all)}',
-#          f'{round(sum([(i * log2(k) + n * k) / (2 * n * k) for i in allSuccess]) / len(allSuccess), 5)}' if len(
-#              allSuccess) != 0 else 'N/A',
-#          f'{round(sum([(i * log2(k) + n * k) / (2 * n * k) for i in all]) / len(all), 5)}']
-#     print(" | ".join([i.ljust(20) for i in p]))
-
-# with open('test.txt', 'w') as f:
-#     f.write("    " + "S".ljust(19) + "Delta B_s".ljust(23) + "Delta B".ljust(23) + "R_s".ljust(23) + "R".ljust(23) + "\n")
-#     f.write('EM1' + "\n")
-#     n = 3
-#     for i in range(len(lengths)):
-#         l = lengths[i]
-#         delta = (n * l) / (l - 1)
-#         S = [n < delta for n in L[i]]
-#         allSuccess = [d for d, s in zip(L[i], S) if s]
-#         p = [f'{2 * l} - {sum(S)}/{len(S)}={sum(S) / len(S)}' if len(S) != 0 else 'N/A',
-#              f'{sum([i - n * l for i in allSuccess]) / len(allSuccess)}' if len(allSuccess) != 0 else 'N/A',
-#              f'{sum([i - n * l for i in L[i]]) / len(L[i])}',
-#              f'{round(sum([(i * log2(l) + n * l) / (2 * n * l) for i in allSuccess]) / len(allSuccess), 5)}' if len(
-#                  allSuccess) != 0 else 'N/A',
-#              f'{round(sum([(i * log2(l) + n * l) / (2 * n * l) for i in L[i]]) / len(L[i]), 5)}']
-#         f.write(" | ".join([i.ljust(20) for i in p]) + "\n")
-#     f.write('EM2' + "\n")
-#     for i in range(len(L)):
-#         l = lengths[i]
-#         delta = (2 * n * l) / (l - 1)
-#         S = [n < delta for n in L[i]]
-#         allSuccess = [d for d, s in zip(L[i], S) if s]
-#         p = [f'{2 * l} - {sum(S)}/{len(S)}={sum(S) / len(S)}' if len(S) != 0 else 'N/A',
-#              f'{sum([i - n * l for i in allSuccess]) / len(allSuccess)}' if len(allSuccess) != 0 else 'N/A',
-#              f'{sum([i - n * l for i in L[i]]) / len(L[i])}',
-#              f'{round(sum([(i * log2(l)) / (2 * n * l) for i in allSuccess]) / len(allSuccess), 5)}' if len(
-#                  allSuccess) != 0 else 'N/A',
-#              f'{round(sum([(i * log2(l)) / (2 * n * l) for i in L[i]]) / len(L[i]), 5)}']
-#         f.write(" | ".join([i.ljust(20) for i in p]) + "\n")
