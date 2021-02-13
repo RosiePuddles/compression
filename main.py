@@ -26,16 +26,18 @@ class Key:
             last = kwargs['last']
             first = kwargs['first']
             F0C = kwargs['F0C']
-            yes = True
-            if first ^ self.file_split[0]:
-                yes = possible[iteration - n].current_iteration[-1] == self.length - 2
-            if last ^ self.file_split[1]:
-                yes = possible[iteration - n].current_iteration[0] == 0
-            if yes:
-                low = (first ^ self.file_split[0]) * (1 << (self.length - 1)) + (last ^ self.file_split[1])
-                for i_ in range(low, 2 ** self.length, (last ^ self.file_split[1]) + 1):
-                    self.current_iteration = i_
-                    self.iteration_checks(iteration, F0C, first, last)
+            max_BSL = (self.file ^ F0C).bit_length()
+            if possible[iteration - n].current_iteration[-1] < max_BSL:
+                yes = True
+                if first ^ self.file_split[0]:
+                    yes = possible[iteration - n].current_iteration[-1] == self.length - 2
+                if last ^ self.file_split[1]:
+                    yes = possible[iteration - n].current_iteration[0] == 0
+                if yes:
+                    low = (first ^ self.file_split[0]) * (1 << (self.length - 1)) + (last ^ self.file_split[1])
+                    for i_ in range(low, 2 ** self.length, (last ^ self.file_split[1]) + 1):
+                        self.current_iteration = i_
+                        self.iteration_checks(iteration, F0C, first, last)
 
     def iteration_checks(self, iteration, F0C, first, last):
         if self.file ^ XORsum(self.current_iteration, possible[iteration - n].current_iteration) == F0C:
@@ -155,6 +157,8 @@ for n in lengths:
             result = Res(time() - t0, n, k, sum([len(a.value) for a in possible[:n]]))
             # print(f'{str(iteration_number).ljust(4)} - {result}')
             L[-1].append(result)
+        else:
+            print('no')
 
 timTot = 0
 for i in L:
