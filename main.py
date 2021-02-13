@@ -8,6 +8,7 @@ class Key:
     def __init__(self, length, file, child=None):
         self.value = 0
         self.length = length
+        self.file_split = [file >> (2 * self.length - 3), file % 2]
         self.file = file
         self.current_iteration = 0
         self.child = child
@@ -18,51 +19,37 @@ class Key:
             for i_ in range(2 ** self.length):
                 self.current_iteration = i_
                 F0C = self.file ^ XORsum(self.current_iteration, possible[0].current_iteration)
-                # F0C = [F0C, F0C >> k - 1, F0C % 2]
-                self.child.iterate(iteration + 1, F0C=F0C)
+                F0C = [F0C, F0C >> (2 * self.length - 3), F0C % 2]
+                self.child.iterate(iteration + 1, F0C=F0C[0], first=F0C[1], last=F0C[2])
         else:
             # Not first key, so 'last' and 'first' exist
-            # last = int(kwargs['last'])
-            # first = int(kwargs['first'])
+            last = kwargs['last']
+            first = kwargs['first']
             F0C = kwargs['F0C']
-            # if last and first:
-            #     cur_BSL = possible[iteration - n].current_iteration
-            #     if cur_BSL[0] == 0 and cur_BSL[-1] == k - 1:
-            #         for i_ in range(2 ** (self.length - 2) - 1):
-            #             self.current_iteration = ((i_ + (1 << (self.length - 2))) << 1) + 1
-            #             self.iteration_checks(iteration, F0C, first, last)
-            # elif first:
-            #     if possible[iteration - n].current_iteration[-1] == k - 1:
-            #         for i_ in range(2 ** (self.length - 1) - 1):
-            #             self.current_iteration = i_ + (1 << (self.length - 1))
-            #             self.iteration_checks(iteration, F0C, first, last)
-            # elif last:
-            #     if possible[iteration - n].current_iteration[0] == 0:
-            #         for i_ in range(2 ** (self.length - 1) - 1):
-            #             self.current_iteration = (i_ << 1) + 1
-            #             self.iteration_checks(iteration, F0C, first, last)
-            # else:
-            #     for i_ in range(2 ** self.length - 1):
-            #         self.current_iteration = i_
-            #         self.iteration_checks(iteration, F0C, first, last)
-            # low = first * (1 << (self.length - 1))
-            # print(low)
-            # high = int(low + 2 ** (self.length - first))
-            # print(high)
-            for i_ in range(2 ** self.length):
-                self.current_iteration = i_
-                self.iteration_checks(iteration, F0C)
+            yes = True
+            if first ^ self.file_split[0]:
+                yes = possible[iteration - n].current_iteration[-1] == self.length - 2
+            if last ^ self.file_split[1]:
+                yes = possible[iteration - n].current_iteration[0] == 0
+            if yes:
+                low = (first ^ self.file_split[0]) * (1 << (self.length - 1)) + (last ^ self.file_split[1])
+                for i_ in range(low, 2 ** self.length, (last ^ self.file_split[1]) + 1):
+                    self.current_iteration = i_
+                    self.iteration_checks(iteration, F0C, first, last)
 
-    def iteration_checks(self, iteration, F0C):
+    def iteration_checks(self, iteration, F0C, first, last):
         if self.file ^ XORsum(self.current_iteration, possible[iteration - n].current_iteration) == F0C:
             if iteration == 2 * n - 1:
                 self.child = sum([len(p.current_iteration) for p in possible[:n]])
                 [p.save() for p in possible]
             else:
-                self.child.iterate(iteration + 1, F0C=F0C)
+                self.child.iterate(iteration + 1, F0C=F0C, first=first, last=last)
 
     def save(self):
         self.value = self.current_iteration
+
+    def __repr__(self):
+        return f'{bitRep(self.value)}'
 
 
 class BSL:
@@ -84,6 +71,9 @@ class BSL:
 
     def save(self):
         self.value = self.current_iteration
+
+    def __repr__(self):
+        return f'{self.value}'
 
 
 class Res:
@@ -146,7 +136,6 @@ for n in lengths:
             while temp in fs:
                 temp = randint(0, maxRand)
             fs.append(temp)
-        cs = [fs[i[0]] ^ fs[i[1]] for i in list(combinations(range(n), 2))]
 
         possible = []
         for i in range(n):
@@ -164,7 +153,7 @@ for n in lengths:
 
         if isinstance(possible[0].value, list):
             result = Res(time() - t0, n, k, sum([len(a.value) for a in possible[:n]]))
-            # print(f'{str(iteration_number).ljust(5)}- {result}')
+            # print(f'{str(iteration_number).ljust(4)} - {result}')
             L[-1].append(result)
 
 timTot = 0
@@ -185,8 +174,9 @@ for i in L:
     S = [p < delta for p in all]
     allSuccess = [d for d, s in zip(all, S) if s]
     p = [f'{n} - {sum(S)}/{len(S)}={sum(S) / len(S)}' if len(S) != 0 else 'N/A',
-         f'{sum([a * log2(l) + 2 * l + n - n * l for a in allSuccess]) / len(allSuccess)}' if len(allSuccess) != 0 else 'N/A',
-         f'{sum([a * log2(l) + 2 * l + n - n * l for a in all]) / len(all)}',
+         f'{round(sum([a * log2(l) + 2 * l + n - n * l for a in allSuccess]) / len(allSuccess), 5)}' if len(
+             allSuccess) != 0 else 'N/A',
+         f'{round(sum([a * log2(l) + 2 * l + n - n * l for a in all]) / len(all), 5)}',
          f'{round(sum([(a * log2(l) + 2 * l + n * (l + 1)) / (2 * n * l) for a in allSuccess]) / len(allSuccess), 5)}' if len(
              allSuccess) != 0 else 'N/A',
          f'{round(sum([(a * log2(l) + 2 * l + n * (l + 1)) / (2 * n * l) for a in all]) / len(all), 5)}']
@@ -195,14 +185,14 @@ print("EM2")
 for i in L:
     n = i[0].batch_size
     l = i[0].l
-    delta = (l * (n - 2)) / log2(l)
+    delta = (2 * l * (n - 2)) / log2(l)
     all = [p.BSL_length for p in i]
     S = [p < delta for p in all]
     allSuccess = [d for d, s in zip(all, S) if s]
     p = [f'{n} - {sum(S)}/{len(S)}={sum(S) / len(S)}' if len(S) != 0 else 'N/A',
-         f'{sum([a * log2(l) + 2 * l + n - 2 * n * l for a in allSuccess]) / len(allSuccess)}' if len(
+         f'{round(sum([a * log2(l) + 2 * l + n - 2 * n * l for a in allSuccess]) / len(allSuccess), 5)}' if len(
              allSuccess) != 0 else 'N/A',
-         f'{sum([a * log2(l) + 2 * l + n - 2 * n * l for a in all]) / len(all)}',
+         f'{round(sum([a * log2(l) + 2 * l + n - 2 * n * l for a in all]) / len(all), 5)}',
          f'{round(sum([(a * log2(l) + 2 * l) / (2 * n * l) for a in allSuccess]) / len(allSuccess), 5)}' if len(
              allSuccess) != 0 else 'N/A',
          f'{round(sum([(a * log2(l) + 2 * l) / (2 * n * l) for a in all]) / len(all), 5)}']
