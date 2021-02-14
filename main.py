@@ -47,26 +47,35 @@ class Key:
             max_BSL = (Dn & -Dn).bit_length() - 1
             if possible[iteration - n].current_iteration[0] <= max_BSL:
                 yes = True
-                if first ^ self.file_split[0]:
+                first_xor = first ^ self.file_split[0]
+                if first_xor:
                     yes = possible[iteration - n].current_iteration[-1] == self.length - 2
-                if last ^ self.file_split[1]:
-                    yes = possible[iteration - n].current_iteration[0] == 0
                 if yes:
-                    low = (first ^ self.file_split[0]) * (1 << (self.length - 1)) + (last ^ self.file_split[1])
-                    if Dn.bit_length() - self.length > possible[iteration - n].current_iteration[-1]:
-                        return Iter_res(False, n - 1)
-                    else:
-                        for i_ in range(low, 2 ** self.length, (last ^ self.file_split[1]) + 1):
-                            self.current_iteration = i_
-                            if self.file ^ XORsum(self.current_iteration,
-                                                  possible[iteration - n].current_iteration) == F0C:
-                                if iteration == 2 * n - 1:
-                                    self.child = sum([len(p.current_iteration) for p in possible[:n]])
-                                    [p.save() for p in possible]
-                                else:
-                                    res = self.child.iterate(iteration + 1, F0C=F0C, first=first, last=last)
-                                    if (not res.type) and res.keep_on > 0:
-                                        return res.less()
+                    last_xor = last ^ self.file_split[1]
+                    if last_xor:
+                        yes = possible[iteration - n].current_iteration[0] == 0
+                    if yes:
+                        first_known_length = possible[iteration - n].current_iteration
+                        if len(first_known_length) > 1:
+                            first_known_length = first_known_length[1] - first_known_length[0]
+                            step = Dn % (2 ** first_known_length)
+                        else:
+                            step = last_xor
+                        low = first_xor * (1 << (self.length - 1))
+                        if Dn.bit_length() - self.length > possible[iteration - n].current_iteration[-1]:
+                            return Iter_res(False, n - 1)
+                        else:
+                            for i_ in range(low + step, 2 ** self.length, step + 1):
+                                self.current_iteration = i_
+                                if self.file ^ XORsum(self.current_iteration,
+                                                      possible[iteration - n].current_iteration) == F0C:
+                                    if iteration == 2 * n - 1:
+                                        self.child = sum([len(p.current_iteration) for p in possible[:n]])
+                                        [p.save() for p in possible]
+                                    else:
+                                        res = self.child.iterate(iteration + 1, F0C=F0C, first=first, last=last)
+                                        if (not res.type) and res.keep_on > 0:
+                                            return res.less()
                 else:
                     return Iter_res(False, iteration - n)
         return Iter_res(True)
