@@ -113,9 +113,8 @@ class Res:
         self.BSL_length = BSL_length
 
     def __repr__(self):
-        return f'Time {self.time_taken}s for {self.batch_size} files of length {2 * self.l}. Length of BSL is ' \
-               f'{self.BSL_length}.\n   {self.iterations} were required of a maximum of {self.max_iterations} ' \
-               f'({round(10000 * self.iterations / self.max_iterations, 5)}E-4)'
+        return f'Time {self.time_taken}s for {self.batch_size} files of length {2 * self.l}. ' \
+               f'Length of BSL is {self.BSL_length}'
 
 
 def XORsum(k, s) -> int:
