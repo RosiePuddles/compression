@@ -62,17 +62,17 @@ class Key:
                                 self.current_iteration += (((Dn ^ self.XORsum_limited(self.current_iteration,
                                                                                       BitShiftList,
                                                                                       index)) >> index) % 2) << index
+                                yes = XORsum(self.current_iteration, BitShiftList) == Dn
                         else:
                             self.current_iteration = Dn >> BitShiftList[0]
-                        if self.file ^ XORsum(self.current_iteration,
-                                              possible[iteration - n].current_iteration) == F0C:
-                            if iteration == 2 * n - 1:
-                                self.child = sum([len(p.current_iteration) for p in possible[:n]])
-                                [p.save() for p in possible]
-                            else:
+                        if yes:
+                            if isinstance(self.child, Key):
                                 res = self.child.iterate(iteration + 1, F0C=F0C, first=first, last=last)
                                 if (not res.type) and res.keep_on > 0:
                                     return res.less()
+                            else:
+                                self.child = sum([len(p.current_iteration) for p in possible[:n]])
+                                [p.save() for p in possible]
                 else:
                     return Iter_res(False, iteration - n)
         return Iter_res(True)
@@ -151,7 +151,7 @@ L = []
 lengths = [3]
 # n = 2, 3
 k = 4
-iterations = 1000
+iterations = 2000
 
 t_ = time()
 for n in lengths:
@@ -159,8 +159,6 @@ for n in lengths:
     s0 = []
     for i in range(1, k + 2):
         s0.extend([list(a) for a in list(combinations(range(k), i))])
-
-    s0_length = len(s0)
 
     for iteration_number in range(iterations):
         t0 = time()
