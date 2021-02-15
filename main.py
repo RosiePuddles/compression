@@ -55,30 +55,36 @@ class Key:
                     if last_xor:
                         yes = possible[iteration - n].current_iteration[0] == 0
                     if yes:
-                        first_known_length = possible[iteration - n].current_iteration
-                        if len(first_known_length) > 1:
-                            first_known_length = first_known_length[1] - first_known_length[0]
-                            step = Dn % (2 ** first_known_length)
+                        self.current_iteration = 0
+                        BitShiftList = possible[iteration - n].current_iteration
+                        if len(BitShiftList) > 1:
+                            for index in range(2 * self.length - 2):
+                                self.current_iteration += (((Dn ^ self.XORsum_limited(self.current_iteration,
+                                                                                      BitShiftList,
+                                                                                      index)) >> index) % 2) << index
                         else:
-                            step = last_xor
-                        low = first_xor * (1 << (self.length - 1))
-                        if Dn.bit_length() - self.length > possible[iteration - n].current_iteration[-1]:
-                            return Iter_res(False, n - 1)
-                        else:
-                            for i_ in range(low + step, 2 ** self.length, step + 1):
-                                self.current_iteration = i_
-                                if self.file ^ XORsum(self.current_iteration,
-                                                      possible[iteration - n].current_iteration) == F0C:
-                                    if iteration == 2 * n - 1:
-                                        self.child = sum([len(p.current_iteration) for p in possible[:n]])
-                                        [p.save() for p in possible]
-                                    else:
-                                        res = self.child.iterate(iteration + 1, F0C=F0C, first=first, last=last)
-                                        if (not res.type) and res.keep_on > 0:
-                                            return res.less()
+                            self.current_iteration = Dn >> BitShiftList[0]
+                        if self.file ^ XORsum(self.current_iteration,
+                                              possible[iteration - n].current_iteration) == F0C:
+                            if iteration == 2 * n - 1:
+                                self.child = sum([len(p.current_iteration) for p in possible[:n]])
+                                [p.save() for p in possible]
+                            else:
+                                res = self.child.iterate(iteration + 1, F0C=F0C, first=first, last=last)
+                                if (not res.type) and res.keep_on > 0:
+                                    return res.less()
                 else:
                     return Iter_res(False, iteration - n)
         return Iter_res(True)
+
+    def XORsum_limited(self, k, s, p) -> int:
+        out = 0
+        for bit_shift in s:
+            if bit_shift > p:
+                break
+            elif bit_shift + self.length > p:
+                out ^= k << bit_shift
+        return out
 
     def save(self):
         self.value = self.current_iteration
