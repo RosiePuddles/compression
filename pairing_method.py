@@ -4,6 +4,25 @@ from random import *
 from time import time
 
 
+# So, this one is a good idea, and fast, but doesn't work.
+# The keys always end up too long
+
+
+class Iter_res:
+    def __init__(self, type, keep_on=0):
+        """
+        Iteration result class
+        :param type: True  = No action required continue with iteration
+                     False = Need to break a given number of times
+        """
+        self.type = type
+        self.keep_on = keep_on
+
+    def less(self):
+        self.keep_on -= 1
+        return self
+
+
 class Key:
     def __init__(self, length, file, index, child=None):
         self.value = 0
@@ -12,57 +31,60 @@ class Key:
         self.file = file
         self.current_iteration = 0
         self.child = child
-        self.index = 2 * index
+        self.index = index
 
-    def iterate(self, iteration, **kwargs) -> int:
-        previous_length_sum = kwargs['previous_length_sum']
-        if iteration == 1:
+    def iterate(self, iteration, **kwargs) -> Iter_res:
+        if iteration == n:
             # First key
             for i_ in range(2 ** self.length):
                 self.current_iteration = i_
                 F0C = self.file ^ XORsum(self.current_iteration, possible[0].current_iteration)
                 F0C = [F0C, F0C >> (2 * self.length - 3), F0C % 2]
-                res = self.child.iterate(iteration + 1, previous_length_sum=previous_length_sum, F0C=F0C[0],
-                                         first=F0C[1], last=F0C[2])
-                if res == 2:
-                    return 2
-            return 1
+                res = self.child.iterate(iteration + 1, F0C=F0C[0], first=F0C[1], last=F0C[2])
+                if (not res.type) and res.keep_on > 0:
+                    return res.less()
         else:
             # Not first key, so 'last' and 'first' exist
-            F0C = kwargs['F0C']
-            Dn = kwargs['Dn']
-            first = kwargs['first']
             last = kwargs['last']
-            passed_in = {'previous_length_sum': previous_length_sum, 'F0C': F0C, 'first': first, 'last': last}
-            BitShiftList = possible[iteration - 1].current_iteration
-            if len(BitShiftList) == 1:
-                if (Dn >> BitShiftList[0]).bit_length() <= self.length:
-                    self.current_iteration = Dn >> BitShiftList[0]
-                    if XORsum(self.current_iteration, BitShiftList) == Dn:
-                        self.current_iteration = Dn >> BitShiftList[0]
-                        if isinstance(self.child, BSL):
-                            res = self.child.iterate(iteration + 1, **passed_in)
-                            return res
+            first = kwargs['first']
+            F0C = kwargs['F0C']
+            Dn = self.file ^ F0C
+            min_s = (Dn & -Dn).bit_length() - 1
+            max_s = Dn.bit_length() - self.length
+            BitShiftList = possible[iteration - n].current_iteration
+            if BitShiftList[0] <= min_s and BitShiftList[-1] >= max_s:
+                yes = True
+                first_xor = first ^ self.file_split[0]
+                if first_xor:
+                    yes = BitShiftList[-1] == self.length - 2
+                if yes:
+                    last_xor = last ^ self.file_split[1]
+                    if last_xor:
+                        yes = BitShiftList[0] == 0
+                    if yes:
+                        self.current_iteration = 0
+                        BitShiftList = BitShiftList
+                        if len(BitShiftList) > 1:
+                            Dn >>= (sub := BitShiftList[0])
+                            BitShiftList = [a - sub for a in BitShiftList]
+                            for index in range(2 * self.length - 2):
+                                self.current_iteration += (((Dn ^ self.XORsum_limited(self.current_iteration,
+                                                                                      BitShiftList,
+                                                                                      index)) >> index) % 2) << index
+                                yes = XORsum(self.current_iteration, [a + sub for a in BitShiftList]) == Dn
                         else:
-                            self.child = previous_length_sum
-                            [p.save() for p in possible]
-            else:
-                self.current_iteration = 0
-                Dn >>= (sub := BitShiftList[0])
-                BitShiftList = [a - sub for a in BitShiftList]
-                for index in range(self.length + BitShiftList[-1]):
-                    self.current_iteration += (((Dn ^ self.XORsum_limited(self.current_iteration,
-                                                                          BitShiftList,
-                                                                          index)) >> index) % 2) << index
-                if XORsum(self.current_iteration, [a + sub for a in BitShiftList]) != Dn:
-                    return 1
-                if isinstance(self.child, BSL):
-                    res = self.child.iterate(iteration + 1, **passed_in)
-                    return res
+                            self.current_iteration = Dn >> BitShiftList[0]
+                        if yes:
+                            if isinstance(self.child, Key):
+                                res = self.child.iterate(iteration + 1, F0C=F0C, first=first, last=last)
+                                if (not res.type) and res.keep_on > 0:
+                                    return res.less()
+                            else:
+                                self.child = sum([len(p.current_iteration) for p in possible[:n]])
+                                [p.save() for p in possible]
                 else:
-                    self.child = previous_length_sum
-                    [p.save() for p in possible]
-        return 1
+                    return Iter_res(False, iteration - n)
+        return Iter_res(True)
 
     def XORsum_limited(self, k, s, p) -> int:
         out = 0
@@ -87,33 +109,18 @@ class BSL:
         self.current_iteration = 0
         self.child = child
 
-    def iterate(self, iteration, **kwargs) -> int:
-        if iteration > 0:
-            previous_length_sum = kwargs['previous_length_sum']
-            F0C = kwargs['F0C']
-            first = kwargs['first']
-            last = kwargs['last']
-            Dn = F0C ^ possible[iteration + 1].file
-            min_s = (Dn & -Dn).bit_length() - 1
-            max_s = Dn.bit_length() - possible[iteration + 1].length
-            for i_ in self.iterable:
-                if (temp_previous_length_sum := previous_length_sum + len(i_)) < possible[-1].child:
-                    if i_[0] <= min_s and i_[-1] >= max_s:
-                        self.current_iteration = i_
-                        res = self.child.iterate(iteration + 1, previous_length_sum=temp_previous_length_sum, F0C=F0C,
-                                                 first=first, last=last, Dn=Dn)
-                        if res:
-                            if res == 2:
-                                return 2
-            return 1
-        else:
-            for i_ in self.iterable:
-                if (previous_length_sum := len(i_)) < possible[-1].child:
-                    self.current_iteration = i_
-                    self.child.iterate(1, previous_length_sum=previous_length_sum)
-                else:
-                    break
-        return 0
+    def iterate(self, iteration, **kwargs):
+        previous_length_sum = kwargs['previous_length_sum']
+        for i_ in self.iterable:
+            temp_previous_length_sum = previous_length_sum + len(i_)
+            if temp_previous_length_sum < possible[-1].child:
+                self.current_iteration = i_
+                res = self.child.iterate(iteration + 1, previous_length_sum=temp_previous_length_sum)
+                if (not res.type) and res.keep_on > 0:
+                    return res.less()
+            else:
+                break
+        return Iter_res(True)
 
     def save(self):
         self.value = self.current_iteration
@@ -150,13 +157,13 @@ def decode(encoded, k, s):
 
 
 L = []
-n_lengths = [5]
+n_lengths = [3]
 k_lengths = [4]
-iterations = 100
+iterations = 1
 
 t_ = time()
-for n in n_lengths:
-    for k in k_lengths:
+for k in k_lengths:
+    for n in n_lengths:
         L.append([])
         s0 = []
         for i in range(1, k + 2):
@@ -175,17 +182,20 @@ for n in n_lengths:
             possible = []
             for i in range(n):
                 possible.append(BSL(s0))
-                possible.append(Key(k + 1, fs[i], i))
+            for i in range(n):
+                possible.append(Key(k + 1, fs[i], i + n))
 
             for i in range(2 * n - 1):
                 possible[i].child = possible[i + 1]
             possible[-1].child = inf
 
-            possible[0].iterate(0)
+            possible[0].iterate(0, previous_length_sum=0)
 
-            if isinstance(possible[0].value, list):
-                # print(possible)
-                result = Res(time() - t0, n, k, sum([len(a.value) for a in possible[::2]]))
+            # print(possible)
+
+            if isinstance(possible[n].value, list):
+                print(possible)
+                result = Res(time() - t0, n, k, sum([len(a.value) for a in possible[:n]]))
                 # print(f'{str(iteration_number).ljust(4)} - {result}')
                 L[-1].append(result)
             else:
