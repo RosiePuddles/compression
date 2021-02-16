@@ -22,11 +22,8 @@ class Key:
                 self.current_iteration = i_
                 F0C = self.file ^ XORsum(self.current_iteration, possible[0].current_iteration)
                 F0C = [F0C, F0C >> (2 * self.length - 3), F0C % 2]
-                res = self.child.iterate(iteration + 1, previous_length_sum=previous_length_sum, F0C=F0C[0],
-                                         first=F0C[1], last=F0C[2])
-                if res == 2:
-                    return 2
-            return 1
+                self.child.iterate(iteration + 1, previous_length_sum=previous_length_sum, F0C=F0C[0], first=F0C[1],
+                                   last=F0C[2])
         else:
             # Not first key, so 'last' and 'first' exist
             F0C = kwargs['F0C']
@@ -36,16 +33,13 @@ class Key:
             passed_in = {'previous_length_sum': previous_length_sum, 'F0C': F0C, 'first': first, 'last': last}
             BitShiftList = possible[iteration - 1].current_iteration
             if len(BitShiftList) == 1:
-                if (Dn >> BitShiftList[0]).bit_length() <= self.length:
-                    self.current_iteration = Dn >> BitShiftList[0]
-                    if XORsum(self.current_iteration, BitShiftList) == Dn:
-                        self.current_iteration = Dn >> BitShiftList[0]
-                        if isinstance(self.child, BSL):
-                            res = self.child.iterate(iteration + 1, **passed_in)
-                            return res
-                        else:
-                            self.child = previous_length_sum
-                            [p.save() for p in possible]
+                self.current_iteration = Dn >> BitShiftList[0]
+                if isinstance(self.child, BSL):
+                    res = self.child.iterate(iteration + 1, **passed_in)
+                    return res
+                else:
+                    self.child = previous_length_sum
+                    [p.save() for p in possible]
             else:
                 self.current_iteration = 0
                 Dn >>= (sub := BitShiftList[0])
@@ -102,10 +96,13 @@ class BSL:
                         self.current_iteration = i_
                         res = self.child.iterate(iteration + 1, previous_length_sum=temp_previous_length_sum, F0C=F0C,
                                                  first=first, last=last, Dn=Dn)
-                        if res:
-                            if res == 2:
-                                return 2
-            return 1
+                        if res == 2:
+                            return 2
+            try:
+                if res:
+                    return 1
+            except NameError:
+                return 2
         else:
             for i_ in self.iterable:
                 if (previous_length_sum := len(i_)) < possible[-1].child:
@@ -150,9 +147,9 @@ def decode(encoded, k, s):
 
 
 L = []
-n_lengths = [5]
+n_lengths = [3]
 k_lengths = [4]
-iterations = 100
+iterations = 1000
 
 t_ = time()
 for n in n_lengths:
