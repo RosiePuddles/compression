@@ -35,9 +35,8 @@ class MasterPair:
                     F0C = self.file ^ XORsum(self.current_key, self.current_BSL)
                     cur_iter_len = len(i_)
                     while True:
-                        for child in self.children:
-                            assert isinstance(child, BSL)
-                            res = child.iterate(F0C)
+                        for index, child in enumerate(self.children):
+                            res = child.iterate(F0C, cur_iter_len, index)
                             if not res.passed:
                                 break
                             else:
@@ -52,8 +51,8 @@ class MasterPair:
                             if self.BSL_length_sum == self.batch_size:
                                 return None
 
-    def child_length(self):
-        return len(self.current_BSL) + self.batch_size - 2
+    def child_length(self, index):
+        return len(self.current_BSL) + self.batch_size - 3 - index
 
     def __repr__(self, full: bool = False) -> str:
         out = f'{self.batch_size} files of length {self.file_length}. L(s) was {self.BSL_length_sum}'
@@ -114,14 +113,13 @@ class BSL:
         self.previous = 0
         self.child = child
 
-    def iterate(self, F0C) -> IterRes:
-        assert isinstance(self.child, Key)
+    def iterate(self, F0C, previous_lengths, index) -> IterRes:
         Dn = F0C ^ self.child.file
         min_s = (Dn & -Dn).bit_length() - 1
         max_s = Dn.bit_length() - self.child.length
         for i_ in self.iterable[self.previous:]:
             self.previous += 1
-            if possible.child_length() + len(i_) < possible.BSL_length_sum:
+            if possible.child_length(index) + len(i_) + previous_lengths < possible.BSL_length_sum:
                 if i_[0] <= min_s and i_[-1] >= max_s:
                     self.current_iteration = i_
                     res = self.child.iterate(Dn, self.current_iteration)
@@ -166,7 +164,7 @@ def bitRep(e: int, l: int = 8) -> str:
 L = []
 n_lengths = [3]
 k_lengths = [4]
-iterations = 1000
+iterations = 10000
 
 t_ = time()
 for n in n_lengths:
@@ -221,7 +219,7 @@ for i in L:
     print(
         f'n={i[0].batch_size}, l={i[0].l} -> {min_}(-{round(mean - min_, 5)}) - {mean} - {max_}(+{round(max_ - mean, 5)})')
 print('')
-print("      " + "S".ljust(15) + "| Delta B_s".ljust(23) + "| Delta B".ljust(23) + "| R_s".ljust(23) + "| R".ljust(23))
+print("      " + "S".ljust(17) + "| Delta B_s".ljust(25) + "| Delta B".ljust(25) + "| R_s".ljust(25) + "| R".ljust(25))
 print("EM1")
 for i in L:
     n = i[0].batch_size
@@ -237,7 +235,7 @@ for i in L:
          f'{round(sum([(a * log2(l) + 2 * l + n * (l + 1)) / (2 * n * l) for a in allSuccess]) / len(allSuccess), 5)}' if len(
              allSuccess) != 0 else 'N/A',
          f'{round(sum([(a * log2(l) + 2 * l + n * (l + 1)) / (2 * n * l) for a in all]) / len(all), 5)}']
-    print(" | ".join([i.ljust(20) for i in p]))
+    print(" | ".join([i.ljust(22) for i in p]))
 print("EM2")
 for i in L:
     n = i[0].batch_size
@@ -253,4 +251,4 @@ for i in L:
          f'{round(sum([(a * log2(l) + 2 * l) / (2 * n * l) for a in allSuccess]) / len(allSuccess), 5)}' if len(
              allSuccess) != 0 else 'N/A',
          f'{round(sum([(a * log2(l) + 2 * l) / (2 * n * l) for a in all]) / len(all), 5)}']
-    print(" | ".join([i.ljust(20) for i in p]))
+    print(" | ".join([i.ljust(22) for i in p]))
