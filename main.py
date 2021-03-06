@@ -170,7 +170,7 @@ def bitRep(e: int, l: int = 8) -> str:
 
 L = []
 # Format: batch size(n), half file length(l)
-lengths = [[3, 4]]
+lengths = [[6, 4]]
 iterations = 1000
 
 t_ = time()

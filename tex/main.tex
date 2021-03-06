@@ -36,7 +36,6 @@
 
 
 \newcommand{\XORsum}{\DOTSB\bigop[0.92]{\Xi}}
-\newcommand{\ANDsum}{\DOTSB\bigop[0.92]{\Lambda}}
 
 % Tikz node styles
 \tikzstyle{basic} = [rectangle, minimum width=3cm, minimum height=0.75cm, text width=2.8cm, text centered, draw=black]
@@ -107,12 +106,6 @@ Since this method involves multiple XOR functions, a shorthand function for recu
 \end{equation}
 \begin{equation}\label{eqn:intermediate}
     I_n=F_n\oplus F_{0C}
-\end{equation}
-\begin{equation}
-    \ANDsum_{i=1}^m(x_i)=x_0\wedge x_1\wedge \dots \wedge x_m
-\end{equation}
-\begin{equation}
-    S(F)=\ANDsum_{i=1}^n(F_i) \oplus \ANDsum_{i=1}^n(\overline{F_n})
 \end{equation}
 
 \subsection{Compression}\label{subsec:compression}
@@ -348,22 +341,22 @@ For each of the results tables, 1000 iterations were used. All decimals are give
         \multirow{2}{*}{$n$} & \multirow{2}{*}{$l$ (Bits)} & \multicolumn{3}{c}{$L(s)$ data} \\
          & & Min. & Mean & Max.\\
         \Xhline{3\arrayrulewidth}
-        \multirow{4}{*}{3} & 4 & 3 & 3 & 3 \\
-         & 8 & 3 & 3 & 3 \\
-         & 16 & ? & ? & ? \\
-         & 32 & ? & ? & ? \\
-        \hline
-        \multirow{4}{*}{4} & 4 & 4 & 4.224 & 5 \\
+        \multirow{4}{*}{3} & 4 & 3 & 3.233 & 4 \\
          & 8 & ? & ? & ? \\
          & 16 & ? & ? & ? \\
          & 32 & ? & ? & ? \\
         \hline
-        \multirow{4}{*}{5} & 4 & 5 & 5.792 & 14 \\
+        \multirow{4}{*}{4} & 4 & 4 & 4.724 & 7 \\
          & 8 & ? & ? & ? \\
          & 16 & ? & ? & ? \\
          & 32 & ? & ? & ? \\
         \hline
-        \multirow{4}{*}{6} & 4 & 6 & 7.846 & 28 \\
+        \multirow{4}{*}{5} & 4 & 5 & 6.319 & 9 \\
+         & 8 & ? & ? & ? \\
+         & 16 & ? & ? & ? \\
+         & 32 & ? & ? & ? \\
+        \hline
+        \multirow{4}{*}{6} & 4 & 6 & 8.114 & 12 \\
          & 8 & ? & ? & ? \\
          & 16 & ? & ? & ? \\
          & 32 & ? & ? & ? \\
