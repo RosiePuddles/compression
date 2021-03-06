@@ -32,10 +32,6 @@ class MasterPair:
 
     def iterate(self):
         for p_ in self.BSL_iterable:
-            # for rotate in range(self.file_length):
-            #     self.rotate = rotate
-            #     self.bitRotate(self.file_all)
-            #     self.rotateChildren()
             for i_ in p_:
                 if len(i_) - (self.batch_size - 1) < self.BSL_length_sum:
                     self.current_BSL = i_
@@ -62,15 +58,6 @@ class MasterPair:
 
     def child_length(self, index):
         return self.batch_size - index - 2
-
-    def bitRotate(self, e):
-        first = e % 2
-        self.file_all = (e >> 1) + (first << (self.batch_size * self.file_length))
-
-    def rotateChildren(self):
-        self.file = self.file_all % (2 ** self.file_length)
-        for i_ in range(1, self.batch_size):
-            self.children[i_ - 1].child.new_file((self.file_all >> (self.file_length * i_)) % (2 ** self.file_length))
 
     def __repr__(self, full: bool = False) -> str:
         out = f'{self.batch_size} files of length {self.file_length}. L(s) was {self.BSL_length_sum} and rotational ' \
