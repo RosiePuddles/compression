@@ -39,22 +39,19 @@ class MasterPair:
                         self.current_key = n_
                         F0C = self.file ^ XORsum(self.current_key, self.current_BSL)
                         cur_iter_len = len(i_)
-                        while True:
-                            for index, child in enumerate(self.children):
-                                res = child.iterate(F0C, cur_iter_len, index)
-                                if not res.passed:
-                                    break
-                                else:
-                                    cur_iter_len += res.BSL_length
+                        for index, child in enumerate(self.children):
+                            res = child.iterate(F0C, cur_iter_len, index)
                             if not res.passed:
                                 break
                             else:
-                                self.BSL_length_sum = cur_iter_len
-                                self.BSL_value = self.current_BSL
-                                self.key_value = self.current_key
-                                [p.save() for p in self.children]
-                                if self.BSL_length_sum == self.batch_size:
-                                    return
+                                cur_iter_len += res.BSL_length
+                        if res.passed:
+                            self.BSL_length_sum = cur_iter_len
+                            self.BSL_value = self.current_BSL
+                            self.key_value = self.current_key
+                            [p.save() for p in self.children]
+                            if self.BSL_length_sum == self.batch_size:
+                                return
 
     def child_length(self, index):
         return self.batch_size - index - 2
@@ -170,7 +167,7 @@ def bitRep(e: int, l: int = 8) -> str:
 
 L = []
 # Format: batch size(n), half file length(l)
-lengths = [[6, 4]]
+lengths = [[3, 4]]
 iterations = 1000
 
 t_ = time()
@@ -195,8 +192,8 @@ if __name__ == '__main__':
             if possible.BSL_length_sum != inf:
                 result = Res(time() - t0, n, k, possible.BSL_length_sum)
                 # print(f'{str(iteration_number).ljust(4)} - {result}')
-                # print(possible.__repr__(full=False))
-                print(str(iteration_number))
+                # print(possible.__repr__(full=True))
+                # print(str(iteration_number))
                 L[-1].append(result)
             else:
                 print('no')

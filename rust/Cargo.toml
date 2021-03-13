@@ -1,0 +1,16 @@
+[package]
+name = "SBX"
+version = "0.1.0"
+authors = ["RosiePuddles <rosiegbartlett@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+itertools = "0.10.0"
+rand = "0.7.3"
+num = "0.4.0"
+
+[[bin]]
+name = "rust"
+path = "main.rs"
