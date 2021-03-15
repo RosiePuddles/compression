@@ -4,15 +4,10 @@ from random import *
 from time import time
 
 
-class IterRes:
-    def __init__(self, passed: bool, BSL_length: int = 0):
-        self.passed = passed
-        self.BSL_length = BSL_length
-
-
 class MasterPair:
-    def __init__(self, master_BSL_iterable, child_BSL_iterable, Key_length, file, batch_size):
-        self.BSL_iterable = master_BSL_iterable
+    def __init__(self, BSL_iterable, BSL_length_iterable, Key_length, file, batch_size):
+        self.BSL_iterable = BSL_iterable
+        self.BSL_length_iterable = BSL_length_iterable
         self.key_iterable = range(2 ** Key_length)
         self.key_length = Key_length
         self.file_length = 2 * (Key_length - 1)
@@ -24,41 +19,39 @@ class MasterPair:
         self.current_BSL = 0
         self.current_key = 0
         self.BSL_length_sum = inf
-        self.rotate = 0
         self.children = []
         for i_ in range(1, self.batch_size):
             file = (self.file_all >> (self.file_length * i_)) % (2 ** self.file_length)
-            self.children.append(BSL(child_BSL_iterable, Key(self.key_length, file), self))
+            self.children.append(BSLCalc(self.BSL_iterable, KeyCalc(self.key_length, file), self))
 
     def iterate(self):
-        for p_ in self.BSL_iterable:
-            for i_ in p_:
-                if len(i_) - (self.batch_size - 1) < self.BSL_length_sum:
-                    self.current_BSL = i_
-                    for n_ in self.key_iterable:
-                        self.current_key = n_
-                        F0C = self.file ^ XORsum(self.current_key, self.current_BSL)
-                        cur_iter_len = len(i_)
-                        for index, child in enumerate(self.children):
-                            res = child.iterate(F0C, cur_iter_len, index)
-                            if not res.passed:
-                                break
-                            else:
-                                cur_iter_len += res.BSL_length
-                        if res.passed:
-                            self.BSL_length_sum = cur_iter_len
-                            self.BSL_value = self.current_BSL
-                            self.key_value = self.current_key
-                            [p.save() for p in self.children]
-                            if self.BSL_length_sum == self.batch_size:
-                                return
-
-    def child_length(self, index):
-        return self.batch_size - index - 2
+        for current_BSL_max_length in self.BSL_length_iterable:
+            if current_BSL_max_length[0][-1] < self.BSL_length_sum:
+                for BSL_length in current_BSL_max_length:
+                    for i_ in self.BSL_iterable[BSL_length[0] - 1]:
+                        if BSL_length[-1] < self.BSL_length_sum:
+                            self.current_BSL = i_
+                            for n_ in self.key_iterable:
+                                self.current_key = n_
+                                F0C = self.file ^ XORsum(self.current_key, self.current_BSL)
+                                for index, child in enumerate(self.children):
+                                    res = child.iterate(F0C, BSL_length[index + 1] - 1)
+                                    if not res:
+                                        break
+                                if res:
+                                    self.BSL_length_sum = BSL_length[-1]
+                                    self.BSL_value = self.current_BSL
+                                    self.key_value = self.current_key
+                                    [p.save() for p in self.children]
+                                    if self.BSL_length_sum == self.batch_size:
+                                        return
+                        else:
+                            break
+                    if BSL_length[-1] >= self.BSL_length_sum:
+                        break
 
     def __repr__(self, full: bool = False) -> str:
-        out = f'{self.batch_size} files of length {self.file_length}. L(s) was {self.BSL_length_sum} and rotational ' \
-              f'shift was {self.rotate}'
+        out = f'{self.batch_size} files of length {self.file_length} bits. L(s) was {self.BSL_length_sum}'
         if full:
             out += f'\nXORsum({bitRep(self.key_value, self.key_length)}, {self.BSL_value}) ^ ' \
                    f'{bitRep(self.file, self.file_length)} = ' \
@@ -68,7 +61,7 @@ class MasterPair:
         return out
 
 
-class Key:
+class KeyCalc:
     def __init__(self, length, file):
         self.value = 0
         self.length = length
@@ -112,26 +105,25 @@ class Key:
         return f'{bitRep(self.value, self.length)}'
 
 
-class BSL:
-    def __init__(self, S0, child, parent):
-        self.iterable = S0
+class BSLCalc:
+    def __init__(self, iterable, child, parent):
+        self.iterable = iterable
         self.current_iteration = 0
         self.value = 0
         self.child = child
         self.parent = parent
 
-    def iterate(self, F0C, previous_lengths, index) -> IterRes:
+    def iterate(self, F0C, current_BSL_lengths) -> bool:
         Dn = F0C ^ self.child.file
         min_s = (Dn & -Dn).bit_length() - 1
         max_s = Dn.bit_length() - self.child.length
-        for i_ in self.iterable:
-            if self.parent.child_length(index) + len(i_) + previous_lengths < self.parent.BSL_length_sum:
-                if i_[0] <= min_s and i_[-1] >= max_s:
-                    self.current_iteration = i_
-                    res = self.child.iterate(Dn, self.current_iteration)
-                    if res:
-                        return IterRes(True, len(self.current_iteration))
-        return IterRes(False)
+        for i_ in self.iterable[current_BSL_lengths]:
+            if i_[0] <= min_s and i_[-1] >= max_s:
+                self.current_iteration = i_
+                res = self.child.iterate(Dn, self.current_iteration)
+                if res:
+                    return True
+        return False
 
     def save(self) -> None:
         self.value = self.current_iteration
@@ -165,6 +157,10 @@ def bitRep(e: int, l: int = 8) -> str:
     return ''.join(('{0:0' + str(l) + 'b}').format(e, 'b'))
 
 
+def sort(e):
+    return e[-1]
+
+
 L = []
 # Format: batch size(n), half file length(l)
 lengths = [[3, 4]]
@@ -175,26 +171,33 @@ if __name__ == '__main__':
     for n, k in lengths:
         L.append([])
         s0 = []
-        s0M = []
+        t = [[] for _ in range(k)]
         for i in range(1, k + 2):
-            t = [list(a) for a in list(combinations(range(k), i))]
-            s0.extend(t)
-            s0M.append(t)
+            s0.append([list(a) for a in list(combinations(range(k), i))])
+
+        s0 = s0[:-1]
+
+        for i in range(k ** n):
+            add = []
+            for p in range(n):
+                add.append(((i // (k ** p)) % k) + 1)
+            t[max(add) - 1].append([*add, sum(add)])
+        [i.sort(key=sort) for i in t]
 
         for iteration_number in range(iterations):
             t0 = time()
             fs = randint(0, 2 ** (n * 2 * k) - 1)
 
-            possible = MasterPair(s0M, s0, k + 1, fs, n)
+            possible = MasterPair(s0, t, k + 1, fs, n)
 
             possible.iterate()
 
             if possible.BSL_length_sum != inf:
                 result = Res(time() - t0, n, k, possible.BSL_length_sum)
+                L[-1].append(result)
                 # print(f'{str(iteration_number).ljust(4)} - {result}')
                 # print(possible.__repr__(full=True))
                 # print(str(iteration_number))
-                L[-1].append(result)
             else:
                 print('no')
 

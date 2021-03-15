@@ -1,0 +1,97 @@
+\documentclass{cup-ino}
+\usepackage[utf8]{inputenc}
+\usepackage{longtable}
+\usepackage{blindtext,alltt}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.17}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{indentfirst}
+\usepackage{footnote}
+\makesavenoteenv{tabular}
+\makesavenoteenv{table}
+\usepackage[hidelinks]{hyperref}
+\usepackage[nameinlink,noabbrev]{cleveref}
+\usepackage{multirow}
+\usepackage{makecell}
+\usepackage[stype=amc,natbib=true,backend=biber,maxbibnames=20]{biblatex}
+
+%% Full title
+\title{File Compression Through Successive Bit Shifted XOR Functions}
+
+%% Shorter title, for use in page header
+\runningtitle{SBX File Compression}
+\author{Rosie Bartlett}
+
+%% The .bib file containing reference entires, for use with biblatex. CUP-INO loads the biblatex-chicago package with customisations for INO.
+\addbibresource{refs.bib}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Compression is undoubtedly an exceptionally important part of data storage. Throughout this paper I will be exploring a new compression method that utilises XOR functions and bit shifting to compress data.
+\end{abstract}
+
+\section{Preface}
+
+To preface this paper, I would like to first explain the notation used throughout this paper. The method being discussed throught this paper is refered to as SBX, for successive bit shifted XOR compression. SBX uses bit shifting to compress correction keys into shorter keys and bit shift lists, or BSLs, which are simply lists of integers. Since there are multiple BSLs, the BSL related to file $n$ will be refered to as $s_n$, where the $i$\textsuperscript{th} value, starting from 1, is refered to as $s_{n,i}$. One of the measures used is in relation to the length of all of the BSLs for a given set of files. In this instance, $s$ refers to all BSLs for the given set of files. Within the scope of this paper, SBX was tested on small amounts of data, and not actual files. For this reason, the term \textit{binary string} is used throughout the paper. This can be seen as equivalent to the term \textit{file}, but in reality it's generation is purely random, unlike a genuine file. The term \textit{pair} is used extensively throughout and refers to a BSL calculation class and key class, and not the actual values contained ithin the classes. For mamematical notation, see \cref{tab:notationTable}.
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{c >{\raggedleft\arraybackslash}p{5.5cm} >{\raggedleft\arraybackslash}p{3cm}}
+        \hline
+        Symbol & Description & Type \\
+        \Xhline{3\arrayrulewidth}
+        $s_n$ & Bit shift list for file $n$ & List of integers \\
+        $k_n$ & The associated key for file $n$ & Bit string \\
+        $D(k_n,s_n)$ & Decoding function. See \cref{eqn:decodeFunc} & Function \\
+        $\XORsum$ & Bitwise XOR shorthand. See \cref{eqn:xorsum} & Operation \\
+        $<<$ & Bit shift left & Operation \\
+        $I_n$ & Correction key. See \cref{eqn:intermediate} & Bit string \\
+        $F_n$ & File $n$, where n$\neq0$ & Bit string \\
+        $F_{0C}$ & Calculated $F_0$ for a given key and BSL pairing. This may be an incorrect $F_0$ & Bit
+        string \\
+        $F_0$ & Compressed file & Bit string \\
+        $L(s)$ & Number of items in all bit shift strings & Integer\\
+        \hline
+    \end{tabular}
+    \caption{Notation used throughout this paper, in order of occurrence}
+    \label{tab:notationTable}
+\end{table}
+
+\section{Overview}
+
+SBX uses a paralell iterative process
+
+\section{Compression}
+
+\section{Expansion}
+
+\section{Results}
+
+\section{Future Work}
+
+
+
+%% Optional appendix
+% \appendix
+
+
+\printbibliography
+
+\section*{Author}
+\begin{authorbio}
+\textbf{Rosie Bartlett} is a currently a student and is still developing SBX. She can be reached at abc@xyz.edu. GitHub is also a good way to keep up with the current version of SBX.
+\end{authorbio}
+
+\section*{Acknowledgements}
+We thank\ldots
+
+\section*{Key Words}
+Keyword one; keyword two; keyword three; keyword four.
+
+\end{document}
