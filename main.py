@@ -14,41 +14,35 @@ class MasterPair:
         self.file_all = file
         self.file = file % 2 ** self.file_length
         self.batch_size = batch_size
+        self.summed_BSL = 0
         self.BSL_value = 0
         self.key_value = 0
         self.current_BSL = 0
         self.current_key = 0
-        self.BSL_length_sum = inf
         self.children = []
         for i_ in range(1, self.batch_size):
             file = (self.file_all >> (self.file_length * i_)) % (2 ** self.file_length)
             self.children.append(BSLCalc(self.BSL_iterable, KeyCalc(self.key_length, file), self))
 
     def iterate(self):
-        for current_BSL_max_length in self.BSL_length_iterable:
-            if current_BSL_max_length[0][-1] < self.BSL_length_sum:
-                for BSL_length in current_BSL_max_length:
-                    for i_ in self.BSL_iterable[BSL_length[0] - 1]:
-                        if BSL_length[-1] < self.BSL_length_sum:
-                            self.current_BSL = i_
-                            for n_ in self.key_iterable:
-                                self.current_key = n_
-                                F0C = self.file ^ XORsum(self.current_key, self.current_BSL)
-                                for index, child in enumerate(self.children):
-                                    res = child.iterate(F0C, BSL_length[index + 1] - 1)
-                                    if not res:
-                                        break
-                                if res:
-                                    self.BSL_length_sum = BSL_length[-1]
-                                    self.BSL_value = self.current_BSL
-                                    self.key_value = self.current_key
-                                    [p.save() for p in self.children]
-                                    if self.BSL_length_sum == self.batch_size:
-                                        return
-                        else:
+        for current_BSL_lengths in self.BSL_length_iterable:
+            for i_ in self.BSL_iterable[current_BSL_lengths[0] - 1]:
+                self.current_BSL = i_
+                for n_ in self.key_iterable:
+                    length = len(i_)
+                    self.current_key = n_
+                    F0C = self.file ^ XORsum(self.current_key, self.current_BSL)
+                    for index, child in enumerate(self.children):
+                        res = child.iterate(F0C, current_BSL_lengths[index + 1] - 1)
+                        if not res:
                             break
-                    if BSL_length[-1] >= self.BSL_length_sum:
-                        break
+                        length += len(child.current_iteration)
+                    if res:
+                        self.BSL_value = self.current_BSL
+                        self.key_value = self.current_key
+                        self.summed_BSL = length
+                        [child.save() for child in self.children]
+                        return True
 
     def __repr__(self, full: bool = False) -> str:
         out = f'{self.batch_size} files of length {self.file_length} bits. L(s) was {self.BSL_length_sum}'
@@ -113,11 +107,11 @@ class BSLCalc:
         self.child = child
         self.parent = parent
 
-    def iterate(self, F0C, current_BSL_lengths) -> bool:
+    def iterate(self, F0C, current_BSL_length) -> bool:
         Dn = F0C ^ self.child.file
         min_s = (Dn & -Dn).bit_length() - 1
         max_s = Dn.bit_length() - self.child.length
-        for i_ in self.iterable[current_BSL_lengths]:
+        for i_ in self.iterable[current_BSL_length]:
             if i_[0] <= min_s and i_[-1] >= max_s:
                 self.current_iteration = i_
                 res = self.child.iterate(Dn, self.current_iteration)
@@ -158,20 +152,20 @@ def bitRep(e: int, l: int = 8) -> str:
 
 
 def sort(e):
-    return e[-1]
+    return sum(e)
 
 
 L = []
-# Format: batch size(n), half file length(l)
-lengths = [[3, 4]]
+# Format: half file length(l), batch size(n)
+lengths = [[4, 3]]
 iterations = 1000
 
 t_ = time()
 if __name__ == '__main__':
-    for n, k in lengths:
+    for k, n in lengths:
         L.append([])
         s0 = []
-        t = [[] for _ in range(k)]
+        t = []
         for i in range(1, k + 2):
             s0.append([list(a) for a in list(combinations(range(k), i))])
 
@@ -181,8 +175,8 @@ if __name__ == '__main__':
             add = []
             for p in range(n):
                 add.append(((i // (k ** p)) % k) + 1)
-            t[max(add) - 1].append([*add, sum(add)])
-        [i.sort(key=sort) for i in t]
+            t.append(add)
+        t.sort(key=sort)
 
         for iteration_number in range(iterations):
             t0 = time()
@@ -190,10 +184,10 @@ if __name__ == '__main__':
 
             possible = MasterPair(s0, t, k + 1, fs, n)
 
-            possible.iterate()
+            iterate_res = possible.iterate()
 
-            if possible.BSL_length_sum != inf:
-                result = Res(time() - t0, n, k, possible.BSL_length_sum)
+            if iterate_res:
+                result = Res(time() - t0, n, k, possible.summed_BSL)
                 L[-1].append(result)
                 # print(f'{str(iteration_number).ljust(4)} - {result}')
                 # print(possible.__repr__(full=True))
