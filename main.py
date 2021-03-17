@@ -15,7 +15,7 @@ class MasterPair:
         self.file = file % 2 ** self.file_length
         self.batch_size = batch_size
         self.summed_BSL = 0
-        self.BSL_value = 0
+        self.BSL_value = []
         self.key_value = 0
         self.current_BSL = 0
         self.current_key = 0
@@ -45,7 +45,7 @@ class MasterPair:
                         return True
 
     def __repr__(self, full: bool = False) -> str:
-        out = f'{self.batch_size} files of length {self.file_length} bits. L(s) was {self.BSL_length_sum}'
+        out = f'{self.batch_size} files of length {self.file_length} bits. L(s) was {self.summed_BSL}'
         if full:
             out += f'\nXORsum({bitRep(self.key_value, self.key_length)}, {self.BSL_value}) ^ ' \
                    f'{bitRep(self.file, self.file_length)} = ' \

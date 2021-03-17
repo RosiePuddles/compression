@@ -1,10 +1,10 @@
-\ProvidesClass{cup-ino}[2021/03/10 Cambridge University Press, International Organization Journal submission template v1.4]
+\ProvidesClass{hehe}
 
 \newif\if@suppmat\@suppmattrue
 \DeclareOption{nosupp}{\@suppmatfalse}
 \ProcessOptions\relax
 \ExecuteOptions{}
-\LoadClass[twoside,10pt]{article}
+\LoadClass[twoside,11pt,a4]{article}
 \RequirePackage{graphicx}
 \RequirePackage{etoolbox}
 \RequirePackage{regexpatch}
@@ -46,13 +46,9 @@
 \RequirePackage[figuresright]{rotating}
 \RequirePackage{lineno}
 
-\geometry{paperwidth=6in,paperheight=9in,
-  top=1in,bottom=0.75in,inner=0.75in,outer=0.6in,
-  headsep=0.3in,footskip=0.3in,footnotesep=0.4in,
-  reversemarginpar,marginparwidth=0.575in,marginparsep=0.5em}
+
 
 \newcommand{\runningtitle}[1]{\def\@runningtitle{#1}}
-\def\@journalname{International Organization}
 
 \renewcommand{\@maketitle}{%
   \begingroup\raggedright%
@@ -68,15 +64,20 @@
 \titlespacing{name=\section}{0pt}{2\baselineskip}{\baselineskip}
 \titlespacing{name=\section,numberless}{0pt}{2\baselineskip}{0.5em}
 
+\renewcommand\section{\@startsection {section}{1}{\z@}%
+                                   {-3.5ex \@plus -1ex \@minus -.2ex}%
+                                   {2.3ex \@plus.2ex}%
+                                   {\normalfont\Large\bfseries}}
+
 \fancyhf{}
 \renewcommand{\headrulewidth}{1pt}
 \fancyhead[RO]{\@runningtitle\quad\textbf{\thepage}}
-\fancyhead[LE]{\textbf{\thepage}\quad\@runningtitle}%\@journalname}
+\fancyhead[LE]{\textbf{\thepage}\quad\@runningtitle}
 \pagestyle{fancy}
 \fancypagestyle{firstpage}{%
   \fancyhf{}
   \renewcommand{\headrule}{}
-  \fancyfoot[L]{\footnotesize\emph{\@journalname}, 20XX, page \thepage\ of \pageref{LastPage}\\%
+  \fancyfoot[L]{\footnotesize20XX, page \thepage\ of \pageref{LastPage}\\%
   \textcopyright\space Rosie Bartlett, 2021}
   % \fancyfoot[R]{\footnotesize~\\doi:10.1017/xxxxxxx xxxx}
 }
@@ -198,5 +199,5 @@
 }
 
 \AtEndPreamble{
-  \RequirePackage[hyperfootnotes=false]{hyperref}
+  \RequirePackage[hyperfootnotes=false, hidelinks]{hyperref}
 }
