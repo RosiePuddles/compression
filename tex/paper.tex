@@ -55,7 +55,7 @@
 \maketitle
 
 \begin{abstract}
-Compression is undoubtedly an exceptionally important part of data storage. Throughout this paper I will be exploring a new compression method that utilises XOR functions and bit shifting to compress data.
+Compression is undoubtedly an exceptionally important part of data storage. Throughout this paper I will be exploring a new compression method that utilises XOR functions and bit shifting to compress data. This method also gives rise to compund compression of files resulting in incresed efficiency.
 \end{abstract}
 
 \section{Preface}
@@ -70,10 +70,10 @@ To preface this paper, I would like to first explain the notation used throughou
         \Xhline{3\arrayrulewidth}
         $s_n$ & Bit shift list for file $n$ & List of integers \\
         $k_n$ & The associated key for file $n$ & Bit string \\
-        $D(k_n,s_n)$ & Decoding function. See \cref{eqn:decodeFunc} & Function \\
-        $\XORsum$ & Bitwise XOR shorthand. See \cref{eqn:xorsum} & Operation \\
+        $D(k_n,s_n)$ & Decoding function. See \cref{eqn:dn} & Function \\
+        $\XORsum$ & Bitwise XOR shorthand. See \cref{eqn:xorSumExplain} & Operation \\
         $<<$ & Bit shift left & Operation \\
-        $I_n$ & Correction key. See \cref{eqn:intermediate} & Bit string \\
+        $I_n$ & Correction key. See \cref{eqn:in} & Bit string \\
         $F_n$ & File $n$, where n$\neq0$ & Bit string \\
         $F_{0C}$ & Calculated $F_0$ for a given key and BSL pairing. This may be an incorrect $F_0$ & Bit
         string \\
@@ -133,7 +133,7 @@ SBX uses a parallel iterative process to compress files. This process (see figur
 
 Before any of the files are even considered, a small amount of preprocessing must be performed. This preprocessing consists of populating two empty lists, which will be referred to as $s_0$ and $t$. The first list to be populated, $s_0$, is an exhaustive list of all the possible BSL values. When this list is being populated, teach item added to it is an exhaustive list of BSL values of a specific length, with this length starting at one and ending with a length of $l$. The second list, $t$, is all the different combinations of BSL value lengths for all the different files. This is ordered in ascending order where the value being considered is the sum of each value within $t$.
 
-For example, when $n$ is 2 and $l$ is 3, the first list, $s_0$ would be \texttt{[[[0], [1], [2]], [[0, 1], [0, 2], [1, 2]], [[0, 1, 2]]]}, and the $t$ would be \texttt{[[1, 1], [2, 1], [1, 2], [3, 1], [2, 2], [1, 3], [3, 2], [2, 3], [3, 3]]}.
+For example, when $n$ is 2 and $l$ is 3, $s_0$ would be:\\\texttt{[[[0], [1], [2]], [[0, 1], [0, 2], [1, 2]], [[0, 1, 2]]]};\\and $t$ would be:\\\texttt{[[1, 1], [2, 1], [1, 2], [3, 1], [2, 2], [1, 3], [3, 2], [2, 3], [3, 3]]}.
 
 Once this has been completed, the files can now be considered. This consists of the files being allocated to classes that all hold their respective file. The first file is different to the others, as it is held by a master pair class instance which controls all of the compression. Each class contains more data needed for the compression such as the key length, and references to the master pair node class instance for the child nodes, and a list of references to the child nodes for the master pair node.
 
@@ -150,9 +150,31 @@ Once the preprocessing has finished, then the compression can begin. The compres
 
 Once $F_{0c}$ has been calculated, the master pair begins iterating over each of the child nodes. For each child node iteration, a small amount of preprocessing must be performed first to enable checks later on. This preprocessing contains calculating $I_n$, and then the offset of the first and last non-zero bit in $I_n$. Once these have been calculated, the child begins iterating over all possible BSL values with a length specified in the current iteration of $t$ in the master class. The index of the child within the master pair class' list of children is the index used in retrieving the current BSL length to iterate over, with the first child accessing the second item in the current iteration of $t$, the first value being already used for the master pair class.
 
-It is here that the first efficiency check is performed. The first value in the current BSL value has to be less than or equal to the index of the first non-zero bit in $I_n$, and the last value in the current BSL added to the length of the key must be larger than or equal to the index of the last non-zero bit in $I_n$. This check ensures the the current BSL is able to produce a non-zero bit in the lowest and highest index required. If this check is passed, then the child node then attempts to calculate a key that, when paired with the respective BSL, would result in $I_n$. This calculation is performed bitwise, calculating the required bit needed to produce the relevant bit in $I_n$. This calculation has to be performed bitwise since each successive step requires the previous bits to have been calculated. However, this calculation method is not perfect and errors can be introduced throughout. Because of this, once the key calculation has been performed, the result of the calculation is passed into the key expansion method, along with the respective BSL, the result of which is compared against $I_n$. If these are identical then the child returns true to the master pair node, which then continues iterating over the remaining children. If none of the child BSL values could be used, then a new key is generated and the process begins again. Once all children have successfully been iterated over, the master pair and all child nodes save their values and the iterative process is ended. This can be done due to the sorting of $t$ in the preprocessing. Since t was sorted by the sum of each of the elements, then once all children have successfully been iterated over, then there cannot be a shorter values of $L(s)$ for the current set of files, and so iteration is ended.
+\begin{equation}\label{eqn:dn}
+  D(k_n,s_n)=\XORsum_{i=1}(k_n << s_{n,i})
+\end{equation}
+\begin{equation}\label{eqn:xorSumExplain}
+  \XORsum_{i=1}^m(x_i)=x_1\oplus x_2\oplus \dots \oplus x_m
+\end{equation}
+
+It is here that the first efficiency check is performed. The first value in the current BSL value has to be less than or equal to the index of the first non-zero bit in $I_n$, and the last value in the current BSL added to the length of the key must be larger than or equal to the index of the last non-zero bit in $I_n$. This check ensures the the current BSL is able to produce a non-zero bit in the lowest and highest index required. If this check is passed, then the child node then attempts to calculate a key that, when paired with the respective BSL and then passed into \cref{eqn:dn}, would result in $I_n$.
+
+To attempt to calculate the required key for the current BSL, the process first begins by considering the first bit in $I_n$. This bit is simply assigned as the current calculated key, and the precess moves onto the next bit. From this point onwards the calculation becomes slightly more complicated. After the first bit, the process first calculates $D(k_n, s_n) \oplus I_n$, and then considers the current bit being calculated. This bit is then added to the end of the previously saved key. This is a bitwise process that relies upon the previous bits having been calculated so that there is a maximum of one uncertainty that can be calculated. This process does include checks to improve efficiency, such as only using values in the BSL that could affect the current bit being calculated.
+
+However, this calculation method is not perfect and errors can be introduced throughout. Because of this, once the key calculation has been performed, the result of the calculation is passed into the key expansion method, along with the respective BSL, the result of which is compared against $I_n$. If these are identical then the child returns true to the master pair node, which then continues iterating over the remaining children. If none of the child BSL values could be used, then a new key is generated and the process begins again. Once all children have successfully been iterated over, the master pair and all child nodes save their values and the iterative process is ended. This can be done due to the sorting of $t$ in the preprocessing. Since t was sorted by the sum of each of the elements, then once all children have successfully been iterated over, then there cannot be a shorter values of $L(s)$ for the current set of files, and so iteration is ended.
+
+\subsection{Example of SBX Compression of a Long Key}
+
+Given $F_{0c}$=\texttt{10110101} and $F_n$=\texttt{11001000}, therefore the long key must be \texttt{01111101}. However, this long key can be compressed, and represented using the key \texttt{11001} and the BSL \texttt{[0, 2]}. To expand the key and BSL pair into the long, or intermediate, key, which is XOR-ed with the master file to produce the file related with this specific BSL and key pair, the BSL is used one item at a time in the following manner once the long key has been initialised to 0. First the key is bit shifted left by the current value in the BSL. This is then XOR-ed with the long key and replaces the previously stored long key value. Using the example previously given, this would result in \texttt{11001} being first bit shifted by 0 to the left resulting in \texttt{11001}. This is then XOR-ed with the initialised long key value of 0, resulting in the long key now having a value of \texttt{11001}. The next value in the BSL is 2, so the key is bit shifted left by 2 resulting in \texttt{1100100}. This is then XOR-ed with the long key resulting in \texttt{01111101}, which is the desired long key for this $F_0$ and $F_n$.
+
 
 \section{Expansion}
+
+Due to the simplicity of SBX, file expansion is an exceptionally quick process. The expansion begins by parsing the compressed file and splitting this into the relevant sections detailed in \cref{CompressedLayout}.
+
+\section{Compressed File Data Layout}
+\label{CompressedLayout}
+
 
 \section{Results}
 
@@ -164,6 +186,10 @@ To evaluate the effectiveness of SBX, it was run on several different sets of da
 
 %% Optional appendix
 \appendix
+\section{Pseudo Code}
+This appendix is to give a general overview of the code used for SBX in the form of pseudo code. For the source code of SBX, a link is provided in the footer on the first page of the paper.
+
+
 \section{Raspberry Pi Cluster Specifications}
 This appendix details the specifications of the Raspberry Pi cluster that SBX was tested upon.
 
