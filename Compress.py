@@ -1,7 +1,6 @@
 from itertools import combinations
-from math import log2, inf
 from random import *
-from time import time
+from modules import *
 
 
 class MasterPair:
@@ -138,17 +137,6 @@ class Res:
     def __repr__(self):
         return f'Time {round(self.time_taken, 5)}s for {self.batch_size} files of length {2 * self.l}. ' \
                f'Length of BSL is {self.BSL_length}'
-
-
-def XORsum(k, s) -> int:
-    out = 0
-    for bit_shift in s:
-        out ^= k << bit_shift
-    return out
-
-
-def bitRep(e: int, l: int = 8) -> str:
-    return ''.join(('{0:0' + str(l) + 'b}').format(e, 'b'))
 
 
 def sort(e):
